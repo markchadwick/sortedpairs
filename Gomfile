@@ -1,0 +1,3 @@
+gom 'github.com/markchadwick/assert'
+gom 'github.com/markchadwick/spec'
+gom 'github.com/mgutz/ansi'
