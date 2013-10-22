@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/markchadwick/spec"
+	"io"
 	"math/rand"
 )
 
@@ -35,7 +36,24 @@ var _ = spec.Suite("Writer", func(c *spec.C) {
 		c.Assert(err).IsNil()
 
 		length := ((25 * 4) + (25 * 9) + (25 * 4) + (25 * 9))
-		c.Skip("pending")
 		c.Assert(buf.Bytes()).HasLen(length)
+
+		r := NewReader(buf)
+		var lastKey []byte
+		for {
+			k, v, err := r.Next()
+			if err != nil {
+				if err != io.EOF {
+					c.Assert(err).IsNil()
+				}
+				return
+			}
+			c.Assert(v).NotNil()
+			if lastKey != nil {
+				cmp := bytes.Compare(lastKey, k)
+				c.Assert(cmp <= 0).IsTrue()
+			}
+			lastKey = k
+		}
 	})
 })

@@ -27,6 +27,25 @@ var _ = spec.Suite("Reader", func(c *spec.C) {
 		c.Assert(err).NotNil().Equals(io.EOF)
 	})
 
+	c.It("repeatedly peek the same value", func(c *spec.C) {
+		p := pair{
+			[]byte("hello"),
+			[]byte("world"),
+		}
+		p.Write(buf)
+
+		r := NewReader(buf)
+		k, v, err := r.Peek()
+		c.Assert(err).IsNil()
+		c.Assert(string(k)).Equals("hello")
+		c.Assert(string(v)).Equals("world")
+
+		k, v, err = r.Peek()
+		c.Assert(err).IsNil()
+		c.Assert(string(k)).Equals("hello")
+		c.Assert(string(v)).Equals("world")
+	})
+
 	c.It("should merge multiple readers", func(c *spec.C) {
 		buf0 := new(bytes.Buffer)
 		buf1 := new(bytes.Buffer)
@@ -46,23 +65,32 @@ var _ = spec.Suite("Reader", func(c *spec.C) {
 		p.Write(buf1)
 
 		mr := NewMergedReader(r0, r1, r2)
+		c.Assert(mr.rs).HasLen(3)
 
 		k, v, err := mr.Next()
+		c.Assert(mr.rs).HasLen(2)
 		c.Assert(err).IsNil()
 		c.Assert(string(k)).Equals("p-001")
 		c.Assert(string(v)).Equals("buf0")
 
-		// k, v, err = mr.Next()
-		// c.Assert(err).IsNil()
-		// c.Assert(string(k)).Equals("p-002")
-		// c.Assert(string(v)).Equals("buf1")
+		k, v, err = mr.Next()
+		c.Assert(mr.rs).HasLen(2)
+		c.Assert(err).IsNil()
+		c.Assert(string(k)).Equals("p-002")
+		c.Assert(string(v)).Equals("buf1")
 
-		// k, v, err = mr.Next()
-		// c.Assert(err).IsNil()
-		// c.Assert(string(k)).Equals("p-003")
-		// c.Assert(string(v)).Equals("buf0")
+		k, v, err = mr.Next()
+		c.Assert(mr.rs).HasLen(1)
+		c.Assert(err).IsNil()
+		c.Assert(string(k)).Equals("p-003")
+		c.Assert(string(v)).Equals("buf0")
 
-		// k, v, err = mr.Next()
-		// c.Assert(err).NotNil().Equals(io.EOF)
+		k, v, err = mr.Next()
+		c.Assert(mr.rs).HasLen(0)
+		c.Assert(err).NotNil().Equals(io.EOF)
+
+		k, v, err = mr.Next()
+		c.Assert(mr.rs).HasLen(0)
+		c.Assert(err).NotNil().Equals(io.EOF)
 	})
 })
