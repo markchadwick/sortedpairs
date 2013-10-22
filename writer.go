@@ -10,7 +10,7 @@ import (
 
 type Writer struct {
 	capacity   int
-	w          io.Writer
+	w          WriteHandler
 	pending    pairs
 	pendingLen int
 	workdir    string
@@ -18,7 +18,11 @@ type Writer struct {
 	spilled    []string
 }
 
-func NewWriter(w io.Writer, capacity int) (writer *Writer, err error) {
+type WriteHandler interface {
+	Write(k, v []byte) error
+}
+
+func NewWriter(w WriteHandler, capacity int) (writer *Writer, err error) {
 	workdir, err := ioutil.TempDir("", "sorted-pairs-")
 	if err != nil {
 		return nil, err
@@ -59,8 +63,7 @@ func (w *Writer) Close() (err error) {
 			}
 			return nil
 		}
-		p := pair{k, v}
-		if _, err = p.Write(w.w); err != nil {
+		if err = w.w.Write(k, v); err != nil {
 			return err
 		}
 	}

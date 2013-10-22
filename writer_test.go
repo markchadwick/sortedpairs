@@ -8,8 +8,18 @@ import (
 	"math/rand"
 )
 
+type BufWriter struct {
+	b *bytes.Buffer
+}
+
+func (bw *BufWriter) Write(k, v []byte) error {
+	p := pair{k, v}
+	_, err := p.Write(bw.b)
+	return err
+}
+
 var _ = spec.Suite("Writer", func(c *spec.C) {
-	buf := new(bytes.Buffer)
+	buf := &BufWriter{new(bytes.Buffer)}
 	w, err := NewWriter(buf, 20)
 	c.Assert(err).IsNil()
 	defer w.Close()
@@ -30,15 +40,15 @@ var _ = spec.Suite("Writer", func(c *spec.C) {
 			c.Assert(err).IsNil()
 		}
 
-		c.Assert(buf.Bytes()).HasLen(0)
+		c.Assert(buf.b.Bytes()).HasLen(0)
 
 		err := w.Close()
 		c.Assert(err).IsNil()
 
 		length := ((25 * 4) + (25 * 9) + (25 * 4) + (25 * 9))
-		c.Assert(buf.Bytes()).HasLen(length)
+		c.Assert(buf.b.Bytes()).HasLen(length)
 
-		r := NewReader(buf)
+		r := NewReader(buf.b)
 		var lastKey []byte
 		for {
 			k, v, err := r.Next()
